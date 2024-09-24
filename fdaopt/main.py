@@ -22,6 +22,7 @@ if __name__ == '__main__':
 
     print(f"Using device: {utils.DEVICE}")
     pprint.pprint(hyperparams)
+    print(hyperparams)
     print()
 
     fed_opt(hyperparams)
