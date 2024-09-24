@@ -43,15 +43,19 @@ def create_hyperparameters(args):
         'alpha': args.alpha,
         'batch_size': args.batch_size,
         'local_epochs': args.local_epochs,
-        'total_rounds': args.total_rounds,
-        'server_opt_name': args.server_opt_name,
-        'client_opt_name': args.client_opt_name
+        'total_rounds': args.total_rounds
     }
 
     server_opt_args = get_opt_args(args.server_opt_args, "server_opt")
     client_opt_args = get_opt_args(args.client_opt_args, "client_opt")
 
-    hyperparams = {**hyperparams, **server_opt_args, **client_opt_args}
+    hyperparams = {
+        **hyperparams,
+        **{'server_opt_name': args.server_opt_name},
+        **server_opt_args,
+        **{'client_opt_name': args.client_opt_name},
+        **client_opt_args
+    }
 
     filename = get_next_filename()
 
