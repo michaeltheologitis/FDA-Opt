@@ -132,4 +132,9 @@ if __name__ == '__main__':
         else:
             time.sleep(10)
 
+    # Wait for all remaining processes to finish after the task queue is empty
+    while processes_devices:
+        check_finished_processes()  # Remove finished processes
+        time.sleep(10)  # Sleep briefly to avoid busy-waiting
+
     print("All processes terminated. Exiting.")
