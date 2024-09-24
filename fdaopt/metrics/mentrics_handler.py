@@ -1,5 +1,10 @@
 import pandas as pd
+import os
 
+# Get the directory of the current script (main.py)
+script_dir = os.path.dirname(os.path.realpath(__file__))
+tmp_dir = '../../results'
+ROUND_METRICS_PATH = os.path.normpath(os.path.join(script_dir, f'{tmp_dir}/round_metrics/'))
 
 class MetricsHandler:
     """
@@ -32,7 +37,7 @@ class MetricsHandler:
         """
         self.round_metrics.append(metrics_dict)
 
-    def save_metrics(self, filepath='./'):
+    def save_metrics(self, filepath=ROUND_METRICS_PATH):
         """
         Saves all the metrics to a CSV file.
 
