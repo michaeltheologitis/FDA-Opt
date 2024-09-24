@@ -4,7 +4,7 @@ import os
 # Get the directory of the current script (main.py)
 script_dir = os.path.dirname(os.path.realpath(__file__))
 tmp_dir = '../../results'
-ROUND_METRICS_PATH = os.path.normpath(os.path.join(script_dir, f'{tmp_dir}/round_metrics/'))
+ROUND_METRICS_PATH = os.path.normpath(os.path.join(script_dir, f'{tmp_dir}/round_metrics'))
 
 class MetricsHandler:
     """
@@ -59,6 +59,4 @@ class MetricsHandler:
         )
 
         # Save the DataFrame to a CSV file
-        df.to_csv(filepath + self.filename)
-
-        print(f"SAVED IN {filepath + self.filename}")
+        df.to_csv(f"{filepath}/{self.filename}")
