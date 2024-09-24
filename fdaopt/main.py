@@ -22,7 +22,8 @@ if __name__ == '__main__':
 
     print(f"Using device: {utils.DEVICE}")
     pprint.pprint(hyperparams, sort_dicts=False)
-    print(hyperparams)
     print()
 
     fed_opt(hyperparams)
+
+    print("Finished Testing!")
