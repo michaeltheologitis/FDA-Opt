@@ -3,9 +3,9 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str, help="The filename of the hyperparameters.")
-    parser.add_argument('device', type=str, help="The device to use (e.g. 'cuda:1').")
-    parser.add_argument('seed', type=int, default=42, help="The seed for reproducibility.")
+    parser.add_argument('--filename', type=str, help="The filename of the hyperparameters.")
+    parser.add_argument('--device', type=str, help="The device to use (e.g. 'cuda:1').")
+    parser.add_argument('--seed', type=int, default=42, help="The seed for reproducibility.")
     args = parser.parse_args()
 
     from fdaopt import utils
