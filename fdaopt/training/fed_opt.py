@@ -25,6 +25,8 @@ def fed_opt(hyperparams):
         num_labels=hyperparams['num_labels']
     )
 
+    print(f"\n\n\n {DEVICE} \n\n\n")
+
     # Move the model to the `DEVICE`
     model = model.to(DEVICE)
 
