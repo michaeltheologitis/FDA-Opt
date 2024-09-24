@@ -1,4 +1,5 @@
 import gc
+import pprint
 
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
@@ -101,7 +102,7 @@ def fed_opt(hyperparams):
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
 
-        print(metrics)
+        pprint.pprint(metrics)
 
         gc.collect()
 
