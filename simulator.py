@@ -42,9 +42,6 @@ if __name__ == '__main__':
 
         hyperparam_id = hyperparam_file.split('.')[0]
 
-        print(f'{OUTPUT_DIR}/{hyperparam_id}.out')
-        print(f'{OUTPUT_DIR}/{hyperparam_id}.err')
-
         with open(f'{OUTPUT_DIR}/{hyperparam_id}.out', 'w') as stdout_file:
             with open(f'{OUTPUT_DIR}/{hyperparam_id}.err', 'w') as stderr_file:
                 print(f"Running: {' '.join(cmd)}")
