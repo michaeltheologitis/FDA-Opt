@@ -102,7 +102,7 @@ def fed_opt(hyperparams):
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
 
-        pprint.pprint(metrics)
+        print(metrics)
 
         gc.collect()
 
