@@ -21,7 +21,7 @@ if __name__ == '__main__':
     hyperparams = get_hyperparameters(args.filename)
 
     print(f"Using device: {utils.DEVICE}")
-    pprint.pprint(hyperparams)
+    pprint.pprint(hyperparams, sort_dicts=False)
     print(hyperparams)
     print()
 
