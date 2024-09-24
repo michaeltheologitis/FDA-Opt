@@ -1,4 +1,4 @@
-
+import pprint
 
 if __name__ == '__main__':
     import argparse
@@ -21,6 +21,7 @@ if __name__ == '__main__':
     hyperparams = get_hyperparameters(args.filename)
 
     print(f"Using device: {utils.DEVICE}")
-    print(hyperparams)
+    pprint.pprint(hyperparams)
+    print()
 
     fed_opt(hyperparams)
