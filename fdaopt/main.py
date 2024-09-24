@@ -1,4 +1,5 @@
 
+
 if __name__ == '__main__':
     import argparse
 
@@ -18,5 +19,8 @@ if __name__ == '__main__':
     from fdaopt.miscellaneous.parameter_tools import get_hyperparameters
 
     hyperparams = get_hyperparameters(args.filename)
+
+    print(f"Using device: {utils.DEVICE}")
+    print(hyperparams)
 
     fed_opt(hyperparams)
