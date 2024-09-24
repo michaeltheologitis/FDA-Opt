@@ -1,12 +1,8 @@
 pip install torch torchvision torchaudio
 
-
-
-
-
 pip install datasets transformers pandas
 
-pip install accelerate
+#pip install accelerate
 
 pip install evaluate
 pip install scikit-learn scipy
