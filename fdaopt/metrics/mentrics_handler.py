@@ -60,3 +60,5 @@ class MetricsHandler:
 
         # Save the DataFrame to a CSV file
         df.to_csv(filepath + self.filename)
+
+        print(f"SAVED IN {filepath + self.filename}")
