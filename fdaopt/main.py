@@ -1,10 +1,10 @@
 from fdaopt import utils
-from fdaopt.training.fed_opt import fed_opt
 
 utils.set_seed(42)
 utils.set_device('cuda:1')
 
 if __name__ == '__main__':
+    from fdaopt.training.fed_opt import fed_opt
     
     hyperparams = {
         'checkpoint': 'roberta-base',
