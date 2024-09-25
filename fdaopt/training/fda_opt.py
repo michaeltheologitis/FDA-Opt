@@ -9,19 +9,20 @@ from fdaopt.training.optimizers import server_client_optimizers
 from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np
 
 
-def estimation_of_theta(round_variances):
+def estimation_of_theta(round_variances, p=1/3):
     """
     Estimate the weighted average of the provided round variances using a custom weighting scheme.
 
     This function computes the weighted average (or weighted sum) of a series of variance values (from different rounds
     or samples) using a non-uniform weighting strategy. The weight for each round variance increases with its index in
     the sequence, giving more importance to later round variances. The weighting strategy is based on a power-law,
-    with a default exponent of 0.5, meaning weights increase sub-linearly with the index.
+    with a default exponent of 1/3, meaning weights increase sub-linearly with the index.
 
     Args:
         round_variances (list): A sequence of variance values (e.g., from different rounds) for which the weighted sum
                                 will be computed.
-
+        p (float, optional): The exponent controlling how sharply weights increase with the index. Default is 1/3,
+                             which applies sub-linear weights. Increase this value to emphasize later variances more.
     Returns:
         float: The weighted average (linear estimation) of the provided round variances.
     """
@@ -47,7 +48,7 @@ def estimation_of_theta(round_variances):
     # number of samplings
     n = len(round_variances)
 
-    weights = weights_for_weighted_sum(0.5, n)
+    weights = weights_for_weighted_sum(p, n)
 
     # calculate the linear-weighted sum
     weighted_sum = np.dot(weights, round_variances)
@@ -172,8 +173,8 @@ def fda_opt(hyperparams):
 
     # 2. RUN THE FDA-Opt ALGORITHM USING THE ESTIMATED THETA THRESHOLD
 
-    # The variance threshold estimated using the linear-weighted-sum of the round variances
-    theta = estimation_of_theta(round_variances)
+    # The variance threshold estimated using the linear-weighted-sum of the round variances + 10% margin
+    theta = 1.1 * estimation_of_theta(round_variances)
 
     for r in range(r + 1, hyperparams['total_rounds'] - theta_estimation_rounds + r + 1):
 
