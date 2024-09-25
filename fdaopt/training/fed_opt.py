@@ -64,10 +64,10 @@ def fed_opt(hyperparams):
 
         update_sampled_client_parameters(client_train_params, sampled_clients, round_start_train_params)
 
-        # Calculate the total number of steps for this epoch
-        epoch_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
+        # Calculate the total number of steps for this epoch/round
+        round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
 
-        for step in range(epoch_steps):
+        for step in range(round_steps):
             # Perform a federated training step and accumulate the training loss
             training_loss += federated_training_step(model, train_params, client_train_params, client_opt, fed_ds)
 
@@ -96,9 +96,11 @@ def fed_opt(hyperparams):
         # Calculate evaluation metrics on the test set
         metrics = {"round": r + 1} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
         # Calculate the average training loss for the round
-        metrics['training_loss'] = training_loss / epoch_steps
+        metrics['training_loss'] = training_loss / round_steps
         # Calculate variance and helpful metrics
         metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(client_drifts)
+        # Add epoch steps to metrics
+        metrics['round_steps'] = round_steps
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
 

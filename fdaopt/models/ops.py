@@ -215,6 +215,64 @@ def variance(client_drifts):
     return var.item(), avg_norm_sq_drifts.item(), norm_sq_avg_drift.item()
 
 
+def fda_linear_estimation(client_drifts, ksi):
+    """
+    Compute the linear estimation of ||avg(u_t)||^2 using LinearFDA. The way we compute it is by its equivalent form
+    which is the dot product of the average drift and ksi squared. Of course, in a real system implementation we would
+    first compute the dot product of ksi and each individual drift and then average them. They are equivalent, we simply
+    do this because it is more efficient. (see paper)
+
+    Args:
+        client_drifts (dict): A dictionary where keys are client IDs and values are lists of parameter tensors (drifts).
+        ksi (torch.Tensor): The heuristic unit vector used to compute the linear estimation.
+    Returns:
+        float: The linear estimation of ||avg(u_t)||^2.
+    """
+
+    # Compute the average drift
+    avg_drift = average_client_parameters(client_drifts)
+    # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
+    est = torch.dot(avg_drift, ksi)**2
+
+    return est
+
+def fda_ksi_vector(last_sync_params, last_last_sync_params):
+    """
+    Compute the heuristic unit vector ksi for the LinearFDA algorithm. The heuristic unit vector is computed as the
+    normalized difference between the two last global models (syncs). (see paper)
+
+    Args:
+        last_sync_params (list of torch.nn.Parameter): Model after the most recent sync
+        last_last_sync_params (list of torch.nn.Parameter): Model after the 2nd most recent sync.
+    """
+
+    # Vectorize the parameters
+    vec_l = vectorize(last_sync_params)
+    vec_ll = vectorize(last_last_sync_params)
+
+    # Compute the difference and normalize it (no safety check for division by zero)
+    diff = vec_l - vec_ll
+    ksi = diff / torch.norm(diff)
+
+    return ksi
+
+def fda_variance_approx(client_drifts, ksi):
+    # Vectorize each client's drifts
+    drifts_vecs = [vectorize(drifts) for drifts in client_drifts.values()]
+    # Compute the squared l2 norms of each client's drifts
+    norm_sq_drifts = [torch.dot(vec, vec) for vec in drifts_vecs]
+    # Compute the average of the squared norms of the individual client drifts
+    avg_norm_sq_drifts = sum(norm_sq_drifts) / len(norm_sq_drifts)
+
+    # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
+    norm_sq_avg_drift_approx = fda_linear_estimation(client_drifts, ksi)
+
+    # variance approximation of the client models
+    var_approx = avg_norm_sq_drifts - norm_sq_avg_drift_approx
+
+    return var_approx.item()
+
+
 @torch.no_grad
 def update_sampled_client_parameters(client_params, sampled_clients, params):
     """
