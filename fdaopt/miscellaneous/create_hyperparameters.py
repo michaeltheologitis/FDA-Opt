@@ -43,7 +43,8 @@ def create_hyperparameters(args):
         'alpha': args.alpha,
         'batch_size': args.batch_size,
         'local_epochs': args.local_epochs,
-        'total_rounds': args.total_rounds
+        'total_rounds': args.total_rounds,
+        'fda': args.fda
     }
 
     server_opt_args = get_opt_args(args.server_opt_args, "server_opt")
@@ -77,6 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, help="The batch size for the training.", default=8)
     parser.add_argument('--local_epochs', type=int, help="The number of local epochs until we synchronize the model.", default=1)
     parser.add_argument('--total_rounds', type=int, help="The total number of rounds for the training.", default=1000)
+    parser.add_argument('--fda', action='store_true', help="If given, then we train with FDA.")
     parser.add_argument('--server_opt_name', type=str, help="The name of the server optimizer.", required=True)
     parser.add_argument('--client_opt_name', type=str, help="The name of the client optimizer.", required=True)
 

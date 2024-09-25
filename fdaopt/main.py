@@ -16,6 +16,7 @@ if __name__ == '__main__':
     utils.set_device(args.device)
 
     from fdaopt.training.fed_opt import fed_opt
+    from fdaopt.training.fda_opt import fda_opt
     from fdaopt.miscellaneous.parameter_tools import get_hyperparameters
 
     hyperparams = get_hyperparameters(args.filename)
@@ -24,6 +25,9 @@ if __name__ == '__main__':
     pprint.pprint(hyperparams, sort_dicts=False)
     print()
 
-    fed_opt(hyperparams)
+    if hyperparams['fda']:
+        fda_opt(hyperparams)
+    else:
+        fed_opt(hyperparams)
 
     print("Finished Testing!")
