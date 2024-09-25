@@ -173,8 +173,8 @@ def fda_opt(hyperparams):
 
     # 2. RUN THE FDA-Opt ALGORITHM USING THE ESTIMATED THETA THRESHOLD
 
-    # The variance threshold estimated using the linear-weighted-sum of the round variances + 10% margin
-    theta = 1.1 * estimation_of_theta(round_variances)
+    # The variance threshold estimated using the linear-weighted-sum of the round variances
+    theta = estimation_of_theta(round_variances)
 
     for r in range(r + 1, hyperparams['total_rounds'] - theta_estimation_rounds + r + 1):
 
