@@ -9,13 +9,14 @@ from fdaopt.training.optimizers import server_client_optimizers
 from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np
 
 
-def linear_estimation_of_theta(round_variances):
+def estimation_of_theta(round_variances):
     """
-    Estimate the weighted average of the provided round variances using a linear weighting scheme.
+    Estimate the weighted average of the provided round variances using a custom weighting scheme.
 
-    The weight for each round variance increases linearly with its index, giving more importance to
-    later round variances. The final estimate is the weighted sum of the round variances divided by the
-    total weight.
+    This function computes the weighted average (or weighted sum) of a series of variance values (from different rounds
+    or samples) using a non-uniform weighting strategy. The weight for each round variance increases with its index in
+    the sequence, giving more importance to later round variances. The weighting strategy is based on a power-law,
+    with a default exponent of 0.5, meaning weights increase sub-linearly with the index.
 
     Args:
         round_variances (list): A sequence of variance values (e.g., from different rounds) for which the weighted sum
@@ -24,14 +25,32 @@ def linear_estimation_of_theta(round_variances):
     Returns:
         float: The weighted average (linear estimation) of the provided round variances.
     """
+
+    def weights_for_weighted_sum(_p, _n):
+        """
+        Compute custom weights w_i = (i^p) / sum(i^p) for i from 1 to n.
+
+        Args:
+            _p (float): The exponent controlling how sharply weights increase with the index.
+            _n (int): The number of variance values (rounds) being weighted.
+
+        Returns:
+            np.array: Normalized weights where each weight corresponds to a variance,
+                      and the sum of the weights equals 1.
+        """
+        _indices = np.arange(1, _n + 1)
+        _weights = _indices ** _p
+        _normalized_weights = _weights / np.sum(_weights)
+
+        return _normalized_weights
+
     # number of samplings
     n = len(round_variances)
 
-    # linear weights: w_i = i (from 1 to n)
-    weights = np.arange(1, n + 1)
+    weights = weights_for_weighted_sum(0.5, n)
 
     # calculate the linear-weighted sum
-    weighted_sum = np.dot(weights, round_variances) / np.sum(weights)
+    weighted_sum = np.dot(weights, round_variances)
 
     return weighted_sum
 

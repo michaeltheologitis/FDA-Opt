@@ -229,8 +229,8 @@ def fda_linear_estimation(client_drifts, ksi):
         float: The linear estimation of ||avg(u_t)||^2.
     """
 
-    # Compute the average drift
-    avg_drift = average_client_parameters(client_drifts)
+    # Compute the average drift as a vector
+    avg_drift = vectorize(average_client_parameters(client_drifts))
     # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
     est = torch.dot(avg_drift, ksi)**2
 
