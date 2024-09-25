@@ -1,0 +1,3 @@
+,checkpoint,ds_path,ds_name,num_labels,num_clients,clients_per_round,alpha,batch_size,local_epochs,total_rounds,server_opt_name,server_opt_lr,client_opt_name,round,accuracy,f1,testing_loss,training_loss,variance,avg_norm_sq_drifts,norm_sq_avg_drift
+0,roberta-base,glue,mrpc,2,100,10,1.0,8,1,2,Adam,2.3,SGD,1,0.6838235294117647,0.8122270742358079,42.2931864121381,0.6987487210167779,0.0004617426893673837,0.0008323395741172135,0.00037059688474982977
+1,roberta-base,glue,mrpc,2,100,10,1.0,8,1,2,Adam,2.3,SGD,2,0.3161764705882353,0.0,1662.2868508731617,45.27249459160699,0.006826348602771759,0.011420954018831253,0.004594605416059494
