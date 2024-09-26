@@ -7,3 +7,7 @@ python -m fdaopt.miscellaneous.create_hyperparameters --checkpoint roberta-base 
 ```bash
 python -m fdaopt.miscellaneous.create_hyperparameters --server_opt_name AdamW --client_opt_name SGD --server_opt_args lr=0.0001 weight_decay=0.001 --client_opt_args lr=0.001
 ```
+
+```bash
+python -m simulator --device_limits cuda:0=1 cuda:1=1
+```
