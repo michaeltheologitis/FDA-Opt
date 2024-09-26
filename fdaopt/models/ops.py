@@ -229,7 +229,7 @@ def fda_linear_estimation(client_drifts, ksi):
         float: The linear estimation of ||avg(u_t)||^2.
     """
 
-    # Compute the average drift as a vector
+    # Compute the average drift as a vector avg(u_t)
     avg_drift = vectorize(average_client_parameters(client_drifts))
     # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
     est = torch.dot(avg_drift, ksi)**2
@@ -256,7 +256,33 @@ def fda_ksi_vector(last_sync_params, last_last_sync_params):
 
     return ksi
 
-def fda_variance_approx(client_drifts, ksi):
+def fda_sketch_estimation(client_drifts, ams_sketch):
+    """
+    Compute the linear estimation of ||avg(u_t)||^2 using SketchFDA. The way we compute it is by its equivalent form
+    which is (1/1+e) * M_2(sk(avg(u_t))). Of course, in a real system implementation we would first compute each drift's
+    sketch and then average the sketches on the server. They are equivalent, we simply do this because it is more
+    efficient. (see paper)
+
+    Args:
+        client_drifts (dict): A dictionary where keys are client IDs and values are lists of parameter tensors (drifts).
+        ams_sketch (AmsSketch): The AMS sketch used to compute the sketch estimation.
+    Returns:
+        float: The linear estimation of ||avg(u_t)||^2.
+    """
+
+    # Compute the average drift as a vector avg(u_t)
+    avg_drift = vectorize(average_client_parameters(client_drifts))
+
+    # Compute the sketch of the average drift
+    sk = ams_sketch.sketch_for_vector(avg_drift)
+    # Save the epsilon value for the sketch
+    epsilon = ams_sketch.epsilon
+    # Compute the approximation of ||avg(u_t)||^2 using the sketch strategy
+    est = (1 / (1+epsilon)) * ams_sketch.estimate_euc_norm_squared(sk)
+
+    return est
+
+def fda_variance_approx(client_drifts, ksi=None, ams_sketch=None):
     # Vectorize each client's drifts
     drifts_vecs = [vectorize(drifts) for drifts in client_drifts.values()]
     # Compute the squared l2 norms of each client's drifts
@@ -264,8 +290,9 @@ def fda_variance_approx(client_drifts, ksi):
     # Compute the average of the squared norms of the individual client drifts
     avg_norm_sq_drifts = sum(norm_sq_drifts) / len(norm_sq_drifts)
 
-    # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
-    norm_sq_avg_drift_approx = fda_linear_estimation(client_drifts, ksi)
+    # TODO: Code for if ksi is None and ams_sketch is None
+    # Compute the approximation of ||avg(u_t)||^2 using the sketch strategy
+    norm_sq_avg_drift_approx = fda_sketch_estimation(client_drifts, ams_sketch)
 
     print(f"norm_sq_avg_drift_approx: {norm_sq_avg_drift_approx}")
 

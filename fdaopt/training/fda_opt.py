@@ -3,8 +3,9 @@ import gc
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
-    update_sampled_client_parameters, variance, compute_metrics, fda_ksi_vector, fda_variance_approx)
+    update_sampled_client_parameters, variance, compute_metrics, fda_variance_approx)
 from fdaopt.training.fed_train import federated_training_step
+from fdaopt.training.sketch import AmsSketch
 from fdaopt.training.optimizers import server_client_optimizers
 from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np
 
@@ -93,6 +94,9 @@ def fda_opt(hyperparams):
         for client_id in range(hyperparams['clients_per_round'])
     }
 
+    # Initialize the AMS sketch
+    ams_sketch = AmsSketch()
+
     metrics_handler = MetricsHandler(hyperparams)
 
     # 1. ESTIMATE THETA THRESHOLD. RUN FedOpt FOR A FEW ROUNDS TO ESTIMATE THE THETA THRESHOLD
@@ -102,8 +106,6 @@ def fda_opt(hyperparams):
 
     # List to store the variances of the rounds for theta estimation
     round_variances = []
-
-    ksi = None
 
     for r in range(theta_estimation_rounds):
 
@@ -148,10 +150,6 @@ def fda_opt(hyperparams):
 
         # Zero the gradients before the next backward pass
         server_opt.zero_grad()
-
-        # Calculate the ksi vector for the later LinearFDA. The model after the most recent sync is `train_params`,
-        # and the model after the 2nd most recent sync is `round_start_train_params`, at this moment.
-        ksi = fda_ksi_vector(train_params, round_start_train_params)
 
         # Calculate evaluation metrics on the test set
         metrics = {"round": r + 1} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
@@ -201,7 +199,7 @@ def fda_opt(hyperparams):
             # Compute the drifts (differences) between the round start parameters and the client parameters
             client_drifts = compute_client_drifts(round_start_train_params, client_train_params)
             # Calculate the current variance approximation with LinearFDA
-            var_approx = fda_variance_approx(client_drifts, ksi)
+            var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
 
             round_steps += 1
 
@@ -225,10 +223,6 @@ def fda_opt(hyperparams):
 
         # Zero the gradients before the next backward pass
         server_opt.zero_grad()
-
-        # Calculate the ksi vector for the next round for LinearFDA. The model after the most recent sync is
-        # `train_params`, and the model after the 2nd most recent sync is `round_start_train_params`, at this moment.
-        ksi = fda_ksi_vector(train_params, round_start_train_params)
 
         # Calculate evaluation metrics on the test set
         metrics = {"round": r + 1} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
