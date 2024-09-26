@@ -203,8 +203,6 @@ def fda_opt(hyperparams):
 
             round_steps += 1
 
-            print(f"Round Steps: {round_steps}, Variance Approximation: {var_approx}, Theta: {theta}")
-
         # Reset the model parameters to the parameters at the start of the round. This ensures that the
         # server-side optimizer updates are applied correctly (on the parameters at the start of the round)
         copy_parameters(

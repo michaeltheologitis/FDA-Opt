@@ -294,8 +294,6 @@ def fda_variance_approx(client_drifts, ksi=None, ams_sketch=None):
     # Compute the approximation of ||avg(u_t)||^2 using the sketch strategy
     norm_sq_avg_drift_approx = fda_sketch_estimation(client_drifts, ams_sketch)
 
-    print(f"norm_sq_avg_drift_approx: {norm_sq_avg_drift_approx}")
-
     # variance approximation of the client models
     var_approx = avg_norm_sq_drifts - norm_sq_avg_drift_approx
 
