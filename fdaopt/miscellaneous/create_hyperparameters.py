@@ -44,7 +44,9 @@ def create_hyperparameters(args):
         'batch_size': args.batch_size,
         'local_epochs': args.local_epochs,
         'total_rounds': args.total_rounds,
-        'fda': args.fda
+        'fda': args.fda,
+        'theta': args.theta,
+        'extras': args.extras
     }
 
     server_opt_args = get_opt_args(args.server_opt_args, "server_opt")
@@ -77,12 +79,15 @@ if __name__ == '__main__':
     parser.add_argument('--alpha', type=float, help="The alpha parameter of the Dirichlet distribution.", default=1.)
     parser.add_argument('--batch_size', type=int, help="The batch size for the training.", default=8)
     parser.add_argument('--local_epochs', type=int, help="The number of local epochs until we synchronize the model.", default=1)
-    parser.add_argument('--total_rounds', type=int, help="The total number of rounds for the training.", default=1000)
+    parser.add_argument('--total_rounds', type=int, help="The total number of rounds for the training.", default=500)
     parser.add_argument('--fda', action='store_true', help="If given, then we train with FDA.")
+    parser.add_argument('--theta', type=float, help="The theta parameter for the FDA.", default=0.0)
     parser.add_argument('--server_opt_name', type=str, help="The name of the server optimizer.", required=True)
     parser.add_argument('--client_opt_name', type=str, help="The name of the client optimizer.", required=True)
 
     parser.add_argument('--server_opt_args', nargs='*', help="Hyperparameters for the server optimizer (e.g., --server_opt_args lr=0.001 betas='(0.9, 0.999)'")
     parser.add_argument('--client_opt_args', nargs='*', help="Hyperparameters for the client optimizer (e.g., --client_opt_args lr=0.001")
+
+    parser.add_argument('--extras', type=str, help="Extra info.", default='')
 
     create_hyperparameters(parser.parse_args())

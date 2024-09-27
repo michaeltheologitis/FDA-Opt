@@ -104,10 +104,9 @@ def fda_opt(hyperparams):
     # Number of rounds to estimate the theta threshold
     theta_estimation_rounds = int(hyperparams['num_clients'] / hyperparams['clients_per_round'])
 
-    # List to store the variances of the rounds for theta estimation
-    round_variances = []
+    # 2. RUN THE FDA-Opt ALGORITHM USING THE ESTIMATED THETA THRESHOLD
 
-    for r in range(theta_estimation_rounds):
+    for r in range(hyperparams['total_rounds']):
 
         training_loss = 0.0
 
@@ -124,84 +123,23 @@ def fda_opt(hyperparams):
 
         # Calculate the total number of steps for this epoch/round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
-
-        for step in range(round_steps):
-            # Perform a federated training step and accumulate the training loss
-            training_loss += federated_training_step(model, train_params, client_train_params, client_opt, fed_ds)
-
-        # Reset the model parameters to the parameters at the start of the round. This ensures that the
-        # server-side optimizer updates are applied correctly (on the parameters at the start of the round)
-        copy_parameters(
-            from_params=round_start_train_params,
-            to_params=train_params
-        )
-
-        # Compute the drifts (differences) between the round start parameters and the client parameters
-        client_drifts = compute_client_drifts(round_start_train_params, client_train_params)
-
-        # Compute pseudo-gradients based on the average drifts
-        pseudo_gradients = compute_pseudo_gradients(client_drifts)
-
-        # Set the computed pseudo-gradients to the trainable parameters
-        set_gradients(train_params, pseudo_gradients)
-
-        # Update model parameters (global model) using the server optimizer based on pseudo-gradients
-        server_opt.step()
-
-        # Zero the gradients before the next backward pass
-        server_opt.zero_grad()
-
-        # Calculate evaluation metrics on the test set
-        metrics = {"round": r + 1} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
-        # Calculate the average training loss for the round
-        metrics['training_loss'] = training_loss / round_steps
-        # Calculate variance and helpful metrics
-        metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(client_drifts)
-        # Add epoch steps to metrics
-        metrics['round_steps'] = round_steps
-        # Pass round metrics to handler
-        metrics_handler.append_round_metrics(metrics)
-
-        # Append the variance of the round to the list
-        round_variances.append(metrics['variance'])
-
-        print(metrics)
-
-        gc.collect()
-
-    # 2. RUN THE FDA-Opt ALGORITHM USING THE ESTIMATED THETA THRESHOLD
-
-    # The variance threshold estimated using the linear-weighted-sum of the round variances
-    theta = estimation_of_theta(round_variances)
-
-    for r in range(r + 1, hyperparams['total_rounds'] - theta_estimation_rounds + r + 1):
-
-        training_loss = 0.0
-
-        # Save the model parameters at the start of this round
-        sampled_clients = client_sampler.sample()
-
-        # Save the model parameters at the start of this round
-        copy_parameters(
-            from_params=train_params,
-            to_params=round_start_train_params
-        )
-
-        update_sampled_client_parameters(client_train_params, sampled_clients, round_start_train_params)
-
-        round_steps = 0
         var_approx = 0.0
+        local_epochs = 0
+        while var_approx <= hyperparams['theta']:
 
-        while var_approx <= theta:
-            # Perform a federated training step and accumulate the training loss
-            training_loss += federated_training_step(model, train_params, client_train_params, client_opt, fed_ds)
+            local_epochs += 1
+
+            for step in range(round_steps):
+                # Perform a federated training step and accumulate the training loss
+                training_loss += federated_training_step(model, train_params, client_train_params, client_opt, fed_ds)
 
             # Compute the drifts (differences) between the round start parameters and the client parameters
             client_drifts = compute_client_drifts(round_start_train_params, client_train_params)
             # Calculate the current variance approximation with LinearFDA
             var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
 
-            round_steps += 1
+        # TODO: Logically change the names cuz it is not consistent
+        round_steps = local_epochs * round_steps
 
         # Reset the model parameters to the parameters at the start of the round. This ensures that the
         # server-side optimizer updates are applied correctly (on the parameters at the start of the round)
@@ -232,9 +170,6 @@ def fda_opt(hyperparams):
         metrics['round_steps'] = round_steps
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
-
-        # Append the variance of the round to the list
-        round_variances.append(metrics['variance'])
 
         print(metrics)
 
