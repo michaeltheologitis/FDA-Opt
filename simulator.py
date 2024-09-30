@@ -121,10 +121,15 @@ if __name__ == '__main__':
 
             cmd = ['python', '-u', '-m', 'fdaopt.main', f'--filename={task.hyperparam_file}', f'--device={device}']
 
+            # Copy the current environment and add/modify PYTORCH_CUDA_ALLOC_CONF
+            env = os.environ.copy()
+            env['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
+
             with open(task.stdout_filename, 'w') as stdout_file:
                 with open(task.stderr_filename, 'w') as stderr_file:
                     print(f"Running on {device} the hyperparameter file {task.hyperparam_file}.")
-                    process = subprocess.Popen(cmd, stdout=stdout_file, stderr=stderr_file)
+                    process = subprocess.Popen(cmd, stdout=stdout_file, stderr=stderr_file, env=env)
                     processes_devices.append((process, device))
 
             device_counts[device] += 1
