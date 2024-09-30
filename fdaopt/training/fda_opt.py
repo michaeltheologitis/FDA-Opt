@@ -7,54 +7,40 @@ from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, 
 from fdaopt.training.fed_train import federated_training_step
 from fdaopt.training.sketch import AmsSketch
 from fdaopt.training.optimizers import server_client_optimizers
-from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np
+from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np, random
 
 
-def estimation_of_theta(round_variances, p=1/3):
+def random_synchronize(e, k=0.6, e_0=9):
     """
-    Estimate the weighted average of the provided round variances using a custom weighting scheme.
-
-    This function computes the weighted average (or weighted sum) of a series of variance values (from different rounds
-    or samples) using a non-uniform weighting strategy. The weight for each round variance increases with its index in
-    the sequence, giving more importance to later round variances. The weighting strategy is based on a power-law,
-    with a default exponent of 1/3, meaning weights increase sub-linearly with the index.
+    Compute whether to synchronize models at iteration e using a probabilistic approach.
+    The probability of synchronization is modeled using a sigmoid function, which smoothly
+    increases as e increases. For small values of e~<(e_0 - 1), the probability remains very low,
+    and it grows to nearly 1 as e approaches larger values e>(e_0+2).
 
     Args:
-        round_variances (list): A sequence of variance values (e.g., from different rounds) for which the weighted sum
-                                will be computed.
-        p (float, optional): The exponent controlling how sharply weights increase with the index. Default is 1/3,
-                             which applies sub-linear weights. Increase this value to emphasize later variances more.
+        e (int or float): The current epoch or iteration number. As e increases, the probability
+                          of synchronization increases.
+        k (float): The steepness of the sigmoid curve. A larger value of k causes the probability
+                   to increase faster. Default is 0.6.
+        e_0 (int or float): The midpoint of the sigmoid curve where the probability of synchronization
+                            is approximately 0.5. Default is 9.
+
     Returns:
-        float: The weighted average (linear estimation) of the provided round variances.
+        bool: A boolean indicating whether to synchronize models based on the computed probability.
+              Returns False if e equals 0, regardless of the sigmoid function.
     """
 
-    def weights_for_weighted_sum(_p, _n):
-        """
-        Compute custom weights w_i = (i^p) / sum(i^p) for i from 1 to n.
+    def _sigmoid(_e, _k, _e_0):
+        return 1 / (1 + np.exp(-_k * (e - _e_0)))
 
-        Args:
-            _p (float): The exponent controlling how sharply weights increase with the index.
-            _n (int): The number of variance values (rounds) being weighted.
+    if e == 0:
+        return False
 
-        Returns:
-            np.array: Normalized weights where each weight corresponds to a variance,
-                      and the sum of the weights equals 1.
-        """
-        _indices = np.arange(1, _n + 1)
-        _weights = _indices ** _p
-        _normalized_weights = _weights / np.sum(_weights)
+    # Calculate the probability using the sigmoid function
+    p_sync = _sigmoid(e, k, e_0)
 
-        return _normalized_weights
-
-    # number of samplings
-    n = len(round_variances)
-
-    weights = weights_for_weighted_sum(p, n)
-
-    # calculate the linear-weighted sum
-    weighted_sum = np.dot(weights, round_variances)
-
-    return weighted_sum
+    # Return True if we synchronize, False otherwise (based on p_sync)
+    return p_sync > random.random()
 
 
 def fda_opt(hyperparams):
@@ -99,13 +85,6 @@ def fda_opt(hyperparams):
 
     metrics_handler = MetricsHandler(hyperparams)
 
-    # 1. ESTIMATE THETA THRESHOLD. RUN FedOpt FOR A FEW ROUNDS TO ESTIMATE THE THETA THRESHOLD
-
-    # Number of rounds to estimate the theta threshold
-    theta_estimation_rounds = int(hyperparams['num_clients'] / hyperparams['clients_per_round'])
-
-    # 2. RUN THE FDA-Opt ALGORITHM USING THE ESTIMATED THETA THRESHOLD
-
     for r in range(hyperparams['total_rounds']):
 
         training_loss = 0.0
@@ -125,7 +104,7 @@ def fda_opt(hyperparams):
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
         var_approx = 0.0
         local_epochs = 0
-        while var_approx <= hyperparams['theta']:
+        while var_approx <= hyperparams['theta'] and not random_synchronize(local_epochs):
 
             local_epochs += 1
 
