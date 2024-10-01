@@ -1,9 +1,7 @@
-from fdaopt.utils import torch
+from fdaopt.utils import torch, DEVICE
 from math import sqrt
 
 import gc
-
-DEVICE = 'cpu'
 
 
 class AmsSketch:
