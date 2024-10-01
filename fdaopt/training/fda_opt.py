@@ -10,7 +10,8 @@ from fdaopt.training.optimizers import server_client_optimizers
 from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np, random
 
 
-def random_synchronize(e, k=0.6, e_0=9):
+#e_0=9 w/ 100clients
+def random_synchronize(e, k=0.6, e_0=6):
     """
     Compute whether to synchronize models at iteration e using a probabilistic approach.
     The probability of synchronization is modeled using a sigmoid function, which smoothly
