@@ -76,8 +76,9 @@ def fda_opt(hyperparams):
         hyperparams['clients_per_round']
     )
 
+    # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the CPU
     client_train_params = {
-        client_id: [param.detach().clone() for param in round_start_train_params]
+        client_id: [param.detach().clone().to('cpu') for param in round_start_train_params]
         for client_id in range(hyperparams['clients_per_round'])
     }
 
@@ -105,7 +106,9 @@ def fda_opt(hyperparams):
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
         var_approx = 0.0
         local_epochs = 0
-        while var_approx <= hyperparams['theta'] and not random_synchronize(local_epochs):
+
+        #while var_approx <= hyperparams['theta'] and not random_synchronize(local_epochs):
+        while var_approx <= hyperparams['theta']:
 
             local_epochs += 1
 
@@ -154,7 +157,5 @@ def fda_opt(hyperparams):
         print(metrics)
 
         gc.collect()
-
-
 
     metrics_handler.save_metrics()

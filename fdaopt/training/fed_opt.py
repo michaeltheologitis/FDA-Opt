@@ -42,8 +42,9 @@ def fed_opt(hyperparams):
         hyperparams['clients_per_round']
     )
 
+    # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the CPU
     client_train_params = {
-        client_id: [param.detach().clone() for param in round_start_train_params]
+        client_id: [param.detach().clone().to('cpu') for param in round_start_train_params]
         for client_id in range(hyperparams['clients_per_round'])
     }
 

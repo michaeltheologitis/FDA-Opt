@@ -14,11 +14,42 @@ def copy_parameters(from_params, to_params):
         to_params (list of torch.nn.Parameter): An iterable of destination parameters to copy to.
     """
     for from_param, to_param in zip(from_params, to_params):
-        to_param.copy_(from_param)
+        device = to_param.device
+        to_param.copy_(from_param.to(device))
 
 
 @torch.no_grad
 def average_client_parameters(client_train_params):
+    """
+    Efficiently averages parameters from multiple clients on GPU.
+
+    This function uses an incremental mean calculation to avoid creating large
+    intermediate tensors, performing in-place additions to keep memory usage low.
+
+    Args:
+        client_train_params (dict): Dictionary where keys are client IDs and values are lists of parameter tensors.
+
+    Returns:
+        list: A list of averaged parameters, stored on `DEVICE`.
+    """
+
+    num_clients = len(client_train_params)
+    average_params = None
+
+    for train_params in client_train_params.values():
+
+        if not average_params:
+            # Initialize with the first client's parameters divided by num_clients
+            average_params = [param.clone().to(DEVICE) / num_clients for param in train_params]
+        else:
+            # Incrementally add other clients' parameters
+            for param, avg_param in zip(train_params, average_params):
+                avg_param.add_(param.to(DEVICE) / num_clients)
+
+    return average_params
+
+@torch.no_grad
+def average_client_parameters2(client_train_params):
     """
     Averages the parameters from multiple clients.
 
@@ -31,7 +62,7 @@ def average_client_parameters(client_train_params):
         client_train_params (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
 
     Returns:
-        list: A list of averaged parameters.
+        list: A list of averaged parameters which lies on `DEVICE`.
     """
     average_params = [
         torch.mean(torch.stack(param_list), dim=0)
@@ -109,13 +140,28 @@ def compute_drifts(old_params, new_params):
         new_params (list of torch.nn.Parameter): The updated parameters.
 
     Returns:
-        list of torch.Tensor: The computed drifts for each parameter.
+        list of torch.Tensor: The computed drifts for each parameter stored in 'CPU'.
     """
 
-    return [
-        new_param - old_param
-        for old_param, new_param in zip(old_params, new_params)
-    ]
+    drifts = []
+
+    for old_param, new_param in zip(old_params, new_params):
+        old_param = old_param.to(DEVICE)
+        new_param = new_param.to(DEVICE)
+
+        drifts.append(
+            (new_param - old_param).to('cpu')
+        )
+
+    return drifts
+
+
+"""
+return [
+    new_param - old_param
+    for old_param, new_param in zip(old_params, new_params)
+]
+"""
 
 
 @torch.no_grad
@@ -128,7 +174,7 @@ def compute_client_drifts(old_params, client_train_params):
         client_train_params (dict): Dictionary of client IDs and their corresponding parameters.
 
     Returns:
-        dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter.
+        dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter stored in 'CPU'.
     """
     return {
         client_id: compute_drifts(old_params, client_params)
@@ -145,8 +191,9 @@ def compute_pseudo_gradients(client_drifts):
         client_drifts (dict): Dictionary of client IDs and their corresponding parameter drifts.
 
     Returns:
-        list of torch.Tensor: The computed pseudo-gradient.
+        list of torch.Tensor: The computed pseudo-gradient with the result lying on `DEVICE`.
     """
+    # Average the drifts with the result lying on `DEVICE`
     average_drifts = average_client_parameters(client_drifts)
 
     pseudo_gradients = [-drift for drift in average_drifts]
@@ -166,6 +213,9 @@ def set_gradients(train_params, gradients):
         gradients (list of torch.Tensor): The gradients to be assigned to the parameters.
     """
     for param, gradient in zip(train_params, gradients):
+        device = param.device
+        gradient = gradient.to(device)
+
         param.grad = gradient
 
 
@@ -178,9 +228,17 @@ def vectorize(parameters):
         parameters (list of torch.nn.Parameter): An iterable of parameter tensors.
 
     Returns:
-        torch.Tensor: A single vector containing all the elements of the input parameters.
+        torch.Tensor: A single vector containing all the elements of the input parameters with the
+                      result lying on `DEVICE`.
     """
-    return torch.cat([param.view(-1) for param in parameters])
+    con = []
+    for param in parameters:
+        param = param.to(DEVICE)
+        con.append(param.view(-1))
+
+    return torch.cat(con)
+
+    #return torch.cat([param.view(-1) for param in parameters])
 
 
 @torch.no_grad
@@ -195,66 +253,36 @@ def variance(client_drifts):
         float: The computed variance of the client drifts.
     """
 
+    """
     # Vectorize each client's drifts
     drifts_vecs = [vectorize(drifts) for drifts in client_drifts.values()]
     # Compute the squared l2 norms of each client's drifts
     norm_sq_drifts = [torch.dot(vec, vec) for vec in drifts_vecs]
     # Compute the average of the squared norms of the individual client drifts
     avg_norm_sq_drifts = sum(norm_sq_drifts) / len(norm_sq_drifts)
+    """
+    norm_sq_drifts = []
+    for drifts in client_drifts.values():
+        # Vectorize the client-drifts with the result lying on `DEVICE`
+        drift_vec = vectorize(drifts)
+        # Compute the squared l2 norm of the client-drift, with the result lying on `DEVICE`
+        norm_sq_drift = torch.dot(drift_vec, drift_vec)
+        # Append the squared l2 norm to the list
+        norm_sq_drifts.append(norm_sq_drift)
+    # Compute the average of the squared norms of the individual client drifts
+    avg_norm_sq_drifts = sum(norm_sq_drifts) / len(norm_sq_drifts)
 
-    # Compute the average drift
+    # Compute the average drift, with the result lying on `DEVICE`
     avg_drift = average_client_parameters(client_drifts)
-    # Vectorize the average drift
+    # Vectorize the average drift, with the result lying on `DEVICE`
     avg_drift_vec = vectorize(avg_drift)
-    # Compute the squared l2 norm of the average drift
+    # Compute the squared l2 norm of the average drift, with the result lying on `DEVICE`
     norm_sq_avg_drift = torch.dot(avg_drift_vec, avg_drift_vec)
 
     # variance of the client models
     var = avg_norm_sq_drifts - norm_sq_avg_drift
 
     return var.item(), avg_norm_sq_drifts.item(), norm_sq_avg_drift.item()
-
-
-def fda_linear_estimation(client_drifts, ksi):
-    """
-    Compute the linear estimation of ||avg(u_t)||^2 using LinearFDA. The way we compute it is by its equivalent form
-    which is the dot product of the average drift and ksi squared. Of course, in a real system implementation we would
-    first compute the dot product of ksi and each individual drift and then average them. They are equivalent, we simply
-    do this because it is more efficient. (see paper)
-
-    Args:
-        client_drifts (dict): A dictionary where keys are client IDs and values are lists of parameter tensors (drifts).
-        ksi (torch.Tensor): The heuristic unit vector used to compute the linear estimation.
-    Returns:
-        float: The linear estimation of ||avg(u_t)||^2.
-    """
-
-    # Compute the average drift as a vector avg(u_t)
-    avg_drift = vectorize(average_client_parameters(client_drifts))
-    # Compute the approximation of ||avg(u_t)||^2 using the linear strategy
-    est = torch.dot(avg_drift, ksi)**2
-
-    return est
-
-def fda_ksi_vector(last_sync_params, last_last_sync_params):
-    """
-    Compute the heuristic unit vector ksi for the LinearFDA algorithm. The heuristic unit vector is computed as the
-    normalized difference between the two last global models (syncs). (see paper)
-
-    Args:
-        last_sync_params (list of torch.nn.Parameter): Model after the most recent sync
-        last_last_sync_params (list of torch.nn.Parameter): Model after the 2nd most recent sync.
-    """
-
-    # Vectorize the parameters
-    vec_l = vectorize(last_sync_params)
-    vec_ll = vectorize(last_last_sync_params)
-
-    # Compute the difference and normalize it (no safety check for division by zero)
-    diff = vec_l - vec_ll
-    ksi = diff / torch.norm(diff)
-
-    return ksi
 
 def fda_sketch_estimation(client_drifts, ams_sketch):
     """
@@ -270,10 +298,10 @@ def fda_sketch_estimation(client_drifts, ams_sketch):
         float: The linear estimation of ||avg(u_t)||^2.
     """
 
-    # Compute the average drift as a vector avg(u_t)
+    # Compute the average drift as a vector avg(u_t), with the result lying on `DEVICE`
     avg_drift = vectorize(average_client_parameters(client_drifts))
 
-    # Compute the sketch of the average drift
+    # Compute the sketch of the average drift, with the result lying on `DEVICE`
     sk = ams_sketch.sketch_for_vector(avg_drift)
     # Save the epsilon value for the sketch
     epsilon = ams_sketch.epsilon
@@ -282,15 +310,19 @@ def fda_sketch_estimation(client_drifts, ams_sketch):
 
     return est
 
-def fda_variance_approx(client_drifts, ksi=None, ams_sketch=None):
-    # Vectorize each client's drifts
-    drifts_vecs = [vectorize(drifts) for drifts in client_drifts.values()]
-    # Compute the squared l2 norms of each client's drifts
-    norm_sq_drifts = [torch.dot(vec, vec) for vec in drifts_vecs]
+def fda_variance_approx(client_drifts, ams_sketch=None):
+
+    norm_sq_drifts = []
+    for drifts in client_drifts.values():
+        # Vectorize the client-drifts with the result lying on `DEVICE`
+        drift_vec = vectorize(drifts)
+        # Compute the squared l2 norm of the client-drift, with the result lying on `DEVICE`
+        norm_sq_drift = torch.dot(drift_vec, drift_vec)
+        # Append the squared l2 norm to the list
+        norm_sq_drifts.append(norm_sq_drift)
     # Compute the average of the squared norms of the individual client drifts
     avg_norm_sq_drifts = sum(norm_sq_drifts) / len(norm_sq_drifts)
 
-    # TODO: Code for if ksi is None and ams_sketch is None
     # Compute the approximation of ||avg(u_t)||^2 using the sketch strategy
     norm_sq_avg_drift_approx = fda_sketch_estimation(client_drifts, ams_sketch)
 
