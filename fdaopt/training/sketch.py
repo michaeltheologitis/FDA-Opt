@@ -1,8 +1,6 @@
 from fdaopt.utils import torch
 from math import sqrt
 
-import gc
-
 DEVICE = 'cpu'
 
 
@@ -69,8 +67,6 @@ class AmsSketch:
         four, pos_tensor = self.precomputed_dict[('four', d)], self.precomputed_dict[('pos_tensor', d)]
 
         sketch = self._sketch_for_vector(v, four, pos_tensor)
-
-        gc.collect()
 
         return sketch
 
