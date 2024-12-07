@@ -149,8 +149,14 @@ def compute_drifts(old_params, new_params):
         old_param = old_param.to(DEVICE)
         new_param = new_param.to(DEVICE)
 
+        # TODO: Revert back
+        """
         drifts.append(
             (new_param - old_param).to('cpu')
+        )
+        """
+        drifts.append(
+            (new_param - old_param).to(DEVICE)
         )
 
     return drifts
