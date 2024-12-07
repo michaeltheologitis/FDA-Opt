@@ -7,7 +7,16 @@ from fdaopt.models.ops import compute_client_drifts, compute_pseudo_gradients, s
     update_sampled_client_parameters, variance, compute_metrics
 from fdaopt.training.fed_train import federated_training_step
 from fdaopt.training.optimizers import server_client_optimizers
-from fdaopt.utils import DEVICE, AutoModelForSequenceClassification
+from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, DEVICE_RAM_PROGRAM
+
+# Let RAM usage of one model be M, then,
+SAVE_DEVICE = None
+if DEVICE_RAM_PROGRAM == 'performance' or DEVICE_RAM_PROGRAM == 'moderate':
+    # All client models are stored in DEVICE, which means DEVICE-RAM is O(num_clients * M)
+    SAVE_DEVICE = DEVICE
+elif DEVICE_RAM_PROGRAM == 'low':
+    # All client models are stored in CPU, which means DEVICE-RAM is O(M)
+    SAVE_DEVICE = 'cpu'
 
 
 def fed_opt(hyperparams):
@@ -42,10 +51,9 @@ def fed_opt(hyperparams):
         hyperparams['clients_per_round']
     )
 
-    # TODO: comment + CPU force?
-    # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the CPU
+    # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the SAVE_DEVICE
     client_train_params = {
-        client_id: [param.detach().clone().to(DEVICE) for param in round_start_train_params]
+        client_id: [param.detach().clone().to(SAVE_DEVICE) for param in round_start_train_params]
         for client_id in range(hyperparams['clients_per_round'])
     }
 

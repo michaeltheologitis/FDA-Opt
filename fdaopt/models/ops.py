@@ -1,4 +1,13 @@
-from fdaopt.utils import torch, evaluate, DEVICE
+from fdaopt.utils import torch, evaluate, DEVICE, DEVICE_RAM_PROGRAM
+
+# Let all clients models utilize C amount of RAM, then,
+SAVE_DEVICE = None
+if DEVICE_RAM_PROGRAM == 'performance':
+    # This means we use DEVICE-RAM O(2 * C) -- Essentially, all drifts remain on GPU
+    SAVE_DEVICE = DEVICE
+elif DEVICE_RAM_PROGRAM == 'moderate' or DEVICE_RAM_PROGRAM == 'low':
+    # This means we use DEVICE-RAM O(C) -- Essentially, intermidiate drifts remain on CPU
+    SAVE_DEVICE = 'cpu'
 
 @torch.no_grad
 def copy_parameters(from_params, to_params):
@@ -140,7 +149,7 @@ def compute_drifts(old_params, new_params):
         new_params (list of torch.nn.Parameter): The updated parameters.
 
     Returns:
-        list of torch.Tensor: The computed drifts for each parameter stored in 'CPU'.
+        list of torch.Tensor: The computed drifts for each parameter stored in DEVICE.
     """
 
     drifts = []
@@ -149,15 +158,7 @@ def compute_drifts(old_params, new_params):
         old_param = old_param.to(DEVICE)
         new_param = new_param.to(DEVICE)
 
-        # TODO: Revert back
-        """
-        drifts.append(
-            (new_param - old_param).to('cpu')
-        )
-        """
-        drifts.append(
-            (new_param - old_param).to(DEVICE)
-        )
+        drifts.append(new_param - old_param)
 
     return drifts
 
@@ -180,10 +181,10 @@ def compute_client_drifts(old_params, client_train_params):
         client_train_params (dict): Dictionary of client IDs and their corresponding parameters.
 
     Returns:
-        dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter stored in 'CPU'.
+        dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter stored in DEVICE_SAVE.
     """
     return {
-        client_id: compute_drifts(old_params, client_params)
+        client_id: compute_drifts(old_params, client_params).to(SAVE_DEVICE)
         for client_id, client_params in client_train_params.items()
     }
 
@@ -197,14 +198,14 @@ def compute_pseudo_gradients(client_drifts):
         client_drifts (dict): Dictionary of client IDs and their corresponding parameter drifts.
 
     Returns:
-        list of torch.Tensor: The computed pseudo-gradient with the result lying on `DEVICE`.
+        list of torch.Tensor: The computed pseudo-gradient with the result lying on DEVICE.
     """
     # Average the drifts with the result lying on `DEVICE`
     average_drifts = average_client_parameters(client_drifts)
 
-    pseudo_gradients = [-drift for drift in average_drifts]
+    pseudo_gradient = [-drift for drift in average_drifts]
 
-    return pseudo_gradients
+    return pseudo_gradient
 
 
 @torch.no_grad
