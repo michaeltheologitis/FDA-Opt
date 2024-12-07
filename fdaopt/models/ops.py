@@ -149,7 +149,7 @@ def compute_drifts(old_params, new_params):
         new_params (list of torch.nn.Parameter): The updated parameters.
 
     Returns:
-        list of torch.Tensor: The computed drifts for each parameter stored in DEVICE.
+        list of torch.Tensor: The computed drifts for each parameter stored in SAVE_DEVICE.
     """
 
     drifts = []
@@ -158,7 +158,12 @@ def compute_drifts(old_params, new_params):
         old_param = old_param.to(DEVICE)
         new_param = new_param.to(DEVICE)
 
-        drifts.append(new_param - old_param)
+        # TODO: Maybe this `SAVE_DEVICE` can move down to the `compute_client_drifts` function. THe idea should be
+        # TODO: that functions that return list of client stuff should place the stuff on `SAVE_DEVICE`. But,
+        # TODO: functions that return single stuff should (not care and) place the stuff on `DEVICE`.
+        drifts.append(
+            (new_param - old_param).to(SAVE_DEVICE)
+        )
 
     return drifts
 
@@ -184,7 +189,7 @@ def compute_client_drifts(old_params, client_train_params):
         dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter stored in DEVICE_SAVE.
     """
     return {
-        client_id: compute_drifts(old_params, client_params).to(SAVE_DEVICE)
+        client_id: compute_drifts(old_params, client_params)
         for client_id, client_params in client_train_params.items()
     }
 
