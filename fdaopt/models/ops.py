@@ -368,3 +368,35 @@ def update_sampled_client_parameters(client_params, sampled_clients, params):
             from_params=params,
             to_params=client_params[new_client_id]
         )
+
+
+@torch.no_grad
+def get_updated_client_parameters(client_params, sampled_clients, params):
+    """
+    Update the parameters of the sampled clients with the current global parameters.
+
+    This function ensures there are no ID collisions or overwriting issues by creating a new dictionary
+    for the updated client parameters.
+
+    Args:
+        client_params (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
+        sampled_clients (list): A list of newly sampled client IDs.
+        params (list of torch.nn.Parameter): The current global parameters to be assigned to the sampled clients.
+
+    Returns:
+        dict: Dictionary where keys are client IDs and values are lists of parameter tensors.
+    """
+
+    new_client_params = dict()
+
+    for new_client_id, old_params in zip(sampled_clients, client_params.values()):
+        # Copy the global parameters to the new client's parameters
+        copy_parameters(
+            from_params=params,
+            to_params=old_params
+        )
+
+        # Assign the updated parameters to the new client ID in the new dictionary.
+        new_client_params[new_client_id] = old_params
+
+    return new_client_params

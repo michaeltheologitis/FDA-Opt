@@ -3,7 +3,7 @@ import gc
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
-    update_sampled_client_parameters, variance, compute_metrics, fda_variance_approx)
+    get_updated_client_parameters, variance, compute_metrics, fda_variance_approx)
 from fdaopt.training.fed_train import federated_training_step
 from fdaopt.training.sketch import AmsSketch
 from fdaopt.training.optimizers import server_client_optimizers
@@ -109,7 +109,7 @@ def fda_opt(hyperparams):
             to_params=round_start_train_params
         )
 
-        update_sampled_client_parameters(client_train_params, sampled_clients, round_start_train_params)
+        client_train_params = get_updated_client_parameters(client_train_params, sampled_clients, round_start_train_params)
 
         # Calculate the total number of steps for this epoch/round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
