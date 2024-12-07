@@ -15,6 +15,10 @@ import evaluate
 
 DEVICE = None
 
+# TODO: Decouple
+# The DEVICE-RAM program. It can be one of 'low', 'moderate', or 'performance'.
+DEVICE_RAM_PROGRAM = 'performance'
+
 
 def set_seed(seed):
     """
