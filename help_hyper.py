@@ -32,15 +32,13 @@ if __name__ == "__main__":
     # Parse space-separated lists of floats
     parser.add_argument('--server_lrs', type=float, nargs='+', required=True, help="Space-separated list of server learning rates")
     parser.add_argument('--client_lrs', type=float, nargs='+', required=True, help="Space-separated list of client learning rates")
+    parser.add_argument('--command', type=str, required=True, help="Input template command")
 
     args = parser.parse_args()
-
-    # Input template command
-    command = input("Enter template command (copy-paste): ")
 
     # Iterate over learning rates and modify the command
     for server_lr in args.server_lrs:
         for client_lr in args.client_lrs:
-            tmp_command = modify_learning_rates(command, server_lr, client_lr)
+            tmp_command = modify_learning_rates(args.command, server_lr, client_lr)
             print(f"{tmp_command}")
             subprocess.run(tmp_command, shell=True, text=True, capture_output=True)
