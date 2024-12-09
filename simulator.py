@@ -81,7 +81,8 @@ if __name__ == '__main__':
     set_device_limits(args.device_limits)
     device_counts = {device: 0 for device in device_limits}
 
-    hyperparameter_files = os.listdir(HYPERPARAM_DIR)
+    hyperparameter_files = [filename for filename in os.listdir(HYPERPARAM_DIR) if filename.endswith('json')]
+    hyperparameter_files = sorted(hyperparameter_files, key=lambda x: int(x.split('.')[0]))
 
     for hyperparam_file in hyperparameter_files:
 
