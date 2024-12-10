@@ -28,7 +28,7 @@ def copy_parameters(from_params, to_params):
 
 
 @torch.no_grad
-def average_client_parameters(client_train_params):
+def average_client_parameters(client_train_params_dict):
     """
     Efficiently averages parameters from multiple clients on GPU.
 
@@ -36,16 +36,16 @@ def average_client_parameters(client_train_params):
     intermediate tensors, performing in-place additions to keep memory usage low.
 
     Args:
-        client_train_params (dict): Dictionary where keys are client IDs and values are lists of parameter tensors.
+        client_train_params_dict (dict): Dictionary where keys are client IDs and values are lists of parameter tensors.
 
     Returns:
         list: A list of averaged parameters, stored on `DEVICE`.
     """
 
-    num_clients = len(client_train_params)
+    num_clients = len(client_train_params_dict)
     average_params = None
 
-    for train_params in client_train_params.values():
+    for train_params in client_train_params_dict.values():
 
         if not average_params:
             # Initialize with the first client's parameters divided by num_clients
@@ -58,7 +58,7 @@ def average_client_parameters(client_train_params):
     return average_params
 
 @torch.no_grad
-def average_client_parameters2(client_train_params):
+def average_client_parameters2(client_train_params_dict):
     """
     Averages the parameters from multiple clients.
 
@@ -68,14 +68,14 @@ def average_client_parameters2(client_train_params):
     is not tracked by autograd.
 
     Args:
-        client_train_params (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
+        client_train_params_dict (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
 
     Returns:
         list: A list of averaged parameters which lies on `DEVICE`.
     """
     average_params = [
         torch.mean(torch.stack(param_list), dim=0)
-        for param_list in zip(*client_train_params.values())
+        for param_list in zip(*client_train_params_dict.values())
     ]
 
     return average_params
@@ -177,20 +177,20 @@ return [
 
 
 @torch.no_grad
-def compute_client_drifts(old_params, client_train_params):
+def compute_client_drifts(old_params, client_train_params_dict):
     """
     Compute the drifts for all clients based on the original parameters.
 
     Args:
         old_params (list of torch.nn.Parameter): The original parameters.
-        client_train_params (dict): Dictionary of client IDs and their corresponding parameters.
+        client_train_params_dict (dict): Dictionary of client IDs and their corresponding parameters.
 
     Returns:
         dict: A dictionary where keys are client IDs and values are lists of drifts for each parameter stored in DEVICE_SAVE.
     """
     return {
         client_id: compute_drifts(old_params, client_params)
-        for client_id, client_params in client_train_params.items()
+        for client_id, client_params in client_train_params_dict.items()
     }
 
 
@@ -345,33 +345,7 @@ def fda_variance_approx(client_drifts, ams_sketch=None):
 
 
 @torch.no_grad
-def update_sampled_client_parameters(client_params, sampled_clients, params):
-    """
-    This function updates the parameters of the sampled clients with the current global parameters.
-    It reassigns the entries in the client_train_params dictionary based on the new sampled clients.
-
-    Args:
-        client_params (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
-        sampled_clients (list): A list of newly sampled client IDs.
-        params (list of torch.nn.Parameter): The current global parameters to be assigned to the sampled clients.
-    """
-    # List of current client IDs
-    old_clients = list(client_params.keys())
-
-    # Iterate over pairs of new client IDs and old client IDs
-    for new_client_id, old_client_id in zip(sampled_clients, old_clients):
-        # Reassign the entry in client_train_params dictionary
-        client_params[new_client_id] = client_params.pop(old_client_id)
-
-        # Copy the global parameters to the new client's parameters
-        copy_parameters(
-            from_params=params,
-            to_params=client_params[new_client_id]
-        )
-
-
-@torch.no_grad
-def get_updated_client_parameters(client_params, sampled_clients, params):
+def get_updated_client_parameters(client_train_params_dict, sampled_clients, params):
     """
     Update the parameters of the sampled clients with the current global parameters.
 
@@ -379,7 +353,7 @@ def get_updated_client_parameters(client_params, sampled_clients, params):
     for the updated client parameters.
 
     Args:
-        client_params (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
+        client_train_params_dict (dict): A dictionary where keys are client IDs and values are lists of parameter tensors.
         sampled_clients (list): A list of newly sampled client IDs.
         params (list of torch.nn.Parameter): The current global parameters to be assigned to the sampled clients.
 
@@ -387,9 +361,9 @@ def get_updated_client_parameters(client_params, sampled_clients, params):
         dict: Dictionary where keys are client IDs and values are lists of parameter tensors.
     """
 
-    new_client_params = dict()
+    new_client_train_params_dict = dict()
 
-    for new_client_id, old_params in zip(sampled_clients, client_params.values()):
+    for new_client_id, old_params in zip(sampled_clients, client_train_params_dict.values()):
         # Copy the global parameters to the new client's parameters
         copy_parameters(
             from_params=params,
@@ -397,6 +371,6 @@ def get_updated_client_parameters(client_params, sampled_clients, params):
         )
 
         # Assign the updated parameters to the new client ID in the new dictionary.
-        new_client_params[new_client_id] = old_params
+        new_client_train_params_dict[new_client_id] = old_params
 
-    return new_client_params
+    return new_client_train_params_dict

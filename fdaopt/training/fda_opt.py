@@ -4,7 +4,7 @@ from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSamp
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
     get_updated_client_parameters, variance, compute_metrics, fda_variance_approx)
-from fdaopt.training.fed_train import federated_training_step
+from fdaopt.training.fed_train import client_round_train
 from fdaopt.training.sketch import AmsSketch
 from fdaopt.training.optimizers import server_client_optimizers
 from fdaopt.utils import DEVICE, AutoModelForSequenceClassification, np, random, DEVICE_RAM_PROGRAM
@@ -86,7 +86,7 @@ def fda_opt(hyperparams):
     )
 
     # A dictionary where keys are client IDs and values are lists of parameter tensors all lying on the SAVE_DEVICE
-    client_train_params = {
+    client_train_params_dict = {
         client_id: [param.detach().clone().to(SAVE_DEVICE) for param in round_start_train_params]
         for client_id in range(hyperparams['clients_per_round'])
     }
@@ -109,29 +109,29 @@ def fda_opt(hyperparams):
             to_params=round_start_train_params
         )
 
-        client_train_params = get_updated_client_parameters(client_train_params, sampled_clients, round_start_train_params)
+        client_train_params_dict = get_updated_client_parameters(client_train_params_dict, sampled_clients, round_start_train_params)
 
         # Calculate the total number of steps for this epoch/round
         round_steps = hyperparams['local_epochs'] * fed_ds.epoch_steps(sampled_clients)
         var_approx = 0.0
-        local_epochs = 0
+        round_epochs = 0
 
-        #while var_approx <= hyperparams['theta'] and not random_synchronize(local_epochs):
-        while var_approx <= hyperparams['theta']:
+        #while var_approx <= hyperparams['theta'] and not random_synchronize(round_epochs):
+        while var_approx <= hyperparams['theta'] and round_epochs < 10:
 
-            local_epochs += 1
+            round_epochs += 1
 
-            for step in range(round_steps):
-                # Perform a federated training step and accumulate the training loss
-                training_loss += federated_training_step(model, train_params, client_train_params, client_opt, fed_ds)
+            for client_id in sampled_clients:
+                training_loss += client_round_train(model, train_params, client_train_params_dict, client_opt, fed_ds,
+                                                    client_id, round_steps)
 
             # Compute the drifts (differences) between the round start parameters and the client parameters
-            client_drifts = compute_client_drifts(round_start_train_params, client_train_params)
+            client_drifts = compute_client_drifts(round_start_train_params, client_train_params_dict)
             # Calculate the current variance approximation with LinearFDA
             var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
 
-        # TODO: Logically change the names cuz it is not consistent
-        round_steps = local_epochs * round_steps
+        # Calculate the accumulate training loss for the round for all clients (which might contain multiple epochs)
+        training_loss = training_loss / round_epochs
 
         # Reset the model parameters to the parameters at the start of the round. This ensures that the
         # server-side optimizer updates are applied correctly (on the parameters at the start of the round)
@@ -155,11 +155,11 @@ def fda_opt(hyperparams):
         # Calculate evaluation metrics on the test set
         metrics = {"round": r + 1} | compute_metrics(model, hyperparams['ds_path'], hyperparams['ds_name'], test_ds)
         # Calculate the average training loss for the round
-        metrics['training_loss'] = training_loss / round_steps
+        metrics['training_loss'] = training_loss / hyperparams['clients_per_round']
         # Calculate variance and helpful metrics
         metrics['variance'], metrics['avg_norm_sq_drifts'], metrics['norm_sq_avg_drift'] = variance(client_drifts)
         # Add epoch steps to metrics
-        metrics['round_steps'] = round_steps
+        metrics['round_steps'] = round_epochs * round_steps
         # Pass round metrics to handler
         metrics_handler.append_round_metrics(metrics)
 
