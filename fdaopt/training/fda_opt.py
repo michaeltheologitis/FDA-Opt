@@ -99,6 +99,7 @@ def fda_opt(hyperparams):
     metrics_handler = MetricsHandler(hyperparams)
 
     theta = hyperparams['theta']
+    first_round = True
 
     for r in range(hyperparams['total_rounds']):
 
@@ -133,6 +134,10 @@ def fda_opt(hyperparams):
             client_drifts = compute_client_drifts(round_start_train_params, client_train_params_dict)
             # Calculate the current variance approximation with LinearFDA
             var_approx = fda_variance_approx(client_drifts, ams_sketch=ams_sketch)
+
+            if first_round:
+                first_round = False
+                break
 
         # Calculate the accumulate training loss for the round for all clients (which might contain multiple epochs)
         training_loss = training_loss / round_epochs
@@ -169,10 +174,7 @@ def fda_opt(hyperparams):
 
         print(metrics)
 
-        if round_epochs == 1:
-            theta = 2 * metrics['variance']
-        elif round_epochs == MAX_ROUNDS:
-            theta = 0.5 * metrics['variance']
+        theta = ((MAX_ROUNDS / 2) / round_epochs) * metrics['variance']
 
         gc.collect()
 
