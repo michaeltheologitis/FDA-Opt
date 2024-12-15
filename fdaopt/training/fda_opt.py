@@ -19,6 +19,8 @@ elif DEVICE_RAM_PROGRAM == 'low':
     SAVE_DEVICE = 'cpu'
 
 
+MAX_ROUNDS = 10
+
 #e_0=9 w/ 100clients
 def random_synchronize(e, k=0.6, e_0=6):
     """
@@ -96,6 +98,8 @@ def fda_opt(hyperparams):
 
     metrics_handler = MetricsHandler(hyperparams)
 
+    theta = hyperparams['theta']
+
     for r in range(hyperparams['total_rounds']):
 
         training_loss = 0.0
@@ -117,7 +121,7 @@ def fda_opt(hyperparams):
         round_epochs = 0
 
         #while var_approx <= hyperparams['theta'] and not random_synchronize(round_epochs):
-        while var_approx <= hyperparams['theta'] and round_epochs < 10:
+        while var_approx <= theta and round_epochs < MAX_ROUNDS:
 
             round_epochs += 1
 
@@ -164,6 +168,11 @@ def fda_opt(hyperparams):
         metrics_handler.append_round_metrics(metrics)
 
         print(metrics)
+
+        if round_epochs == 1:
+            theta = 2 * metrics['variance']
+        elif round_epochs == MAX_ROUNDS:
+            theta = 0.5 * metrics['variance']
 
         gc.collect()
 
