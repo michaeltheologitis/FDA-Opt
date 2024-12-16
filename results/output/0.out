@@ -1,0 +1,20 @@
+Using device: cuda:0
+{'checkpoint': 'roberta-base',
+ 'ds_path': 'glue',
+ 'ds_name': 'mrpc',
+ 'num_labels': 2,
+ 'num_clients': 10,
+ 'clients_per_round': 10,
+ 'alpha': 1.0,
+ 'batch_size': 8,
+ 'local_epochs': 1,
+ 'total_rounds': 200,
+ 'fda': True,
+ 'theta': 1.0,
+ 'extras': '',
+ 'server_opt_name': 'AdamW',
+ 'server_opt_lr': 0.0001,
+ 'client_opt_name': 'SGD',
+ 'client_opt_lr': 1e-05}
+
+{'round': 1, 'accuracy': 0.6838235294117647, 'f1': 0.8122270742358079, 'testing_loss': 0.6746288771722831, 'training_loss': 0.7419016926288604, 'variance': 4.618841558112763e-06, 'avg_norm_sq_drifts': 7.547909717686707e-06, 'norm_sq_avg_drift': 2.929067932200269e-06, 'round_steps': 50}
