@@ -32,6 +32,7 @@ def fed_opt(hyperparams):
     
     print(hyperparams['num_clients'])
     print(hyperparams['batch_size'])
+    print(fed_ds.epoch_steps(list(range(10))))
 
     model = AutoModelForSequenceClassification.from_pretrained(
         hyperparams['checkpoint'],
