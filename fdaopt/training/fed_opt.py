@@ -1,5 +1,4 @@
 import gc
-import pprint
 
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
@@ -29,10 +28,6 @@ def fed_opt(hyperparams):
         hyperparams['alpha'],
         hyperparams['batch_size']
     )
-    
-    print(hyperparams)
-    for i in range(10):
-        print(len(fed_ds.client_dataloaders[i]))
 
     model = AutoModelForSequenceClassification.from_pretrained(
         hyperparams['checkpoint'],
