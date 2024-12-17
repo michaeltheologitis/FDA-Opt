@@ -312,6 +312,7 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
 
     # Calculate the prior distribution
     prior_distribution, num_labels = calculate_prior_distribution(raw_train_dataset)
+    print(f"{prior_distribution}")
 
     # Partition the dataset into federated datasets
     client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
