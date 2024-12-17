@@ -30,9 +30,7 @@ def fed_opt(hyperparams):
         hyperparams['batch_size']
     )
     
-    print(hyperparams['num_clients'])
-    print(hyperparams['batch_size'])
-    print(fed_ds.epoch_steps(list(range(10))))
+    print(hyperparams)
     for i in range(10):
         print(len(fed_ds.client_dataloaders[i]))
 
