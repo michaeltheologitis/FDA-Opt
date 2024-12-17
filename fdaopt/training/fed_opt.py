@@ -29,6 +29,9 @@ def fed_opt(hyperparams):
         hyperparams['alpha'],
         hyperparams['batch_size']
     )
+    
+    print(hyperparams['num_clients'])
+    print(hyperparams['batch_size'])
 
     model = AutoModelForSequenceClassification.from_pretrained(
         hyperparams['checkpoint'],
