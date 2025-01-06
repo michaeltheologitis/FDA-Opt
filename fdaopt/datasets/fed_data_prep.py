@@ -263,6 +263,8 @@ def tokenize_function(ds_path, ds_name, tokenizer):
         return lambda example: tokenizer(example["sentence"], truncation=True)
     if ds_path == "glue" and ds_name == "sst2":
         return lambda example: tokenizer(example["sentence"], truncation=True)
+    if ds_path == "glue" and ds_name == "qnli":
+        return lambda example: tokenizer(example["question"], example["sentence"], truncation=True)
 
     return None
 
