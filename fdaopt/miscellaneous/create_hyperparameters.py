@@ -43,6 +43,7 @@ def create_hyperparameters(args):
         'alpha': args.alpha,
         'batch_size': args.batch_size,
         'local_epochs': args.local_epochs,
+        'max_epochs': args.max_epochs,
         'total_rounds': args.total_rounds,
         'fda': args.fda,
         'theta': args.theta,
