@@ -19,42 +19,6 @@ elif DEVICE_RAM_PROGRAM == 'low':
     SAVE_DEVICE = 'cpu'
 
 
-MAX_ROUNDS = 10
-
-#e_0=9 w/ 100clients
-def random_synchronize(e, k=0.6, e_0=6):
-    """
-    Compute whether to synchronize models at iteration e using a probabilistic approach.
-    The probability of synchronization is modeled using a sigmoid function, which smoothly
-    increases as e increases. For small values of e~<(e_0 - 1), the probability remains very low,
-    and it grows to nearly 1 as e approaches larger values e>(e_0+2).
-
-    Args:
-        e (int or float): The current epoch or iteration number. As e increases, the probability
-                          of synchronization increases.
-        k (float): The steepness of the sigmoid curve. A larger value of k causes the probability
-                   to increase faster. Default is 0.6.
-        e_0 (int or float): The midpoint of the sigmoid curve where the probability of synchronization
-                            is approximately 0.5. Default is 9.
-
-    Returns:
-        bool: A boolean indicating whether to synchronize models based on the computed probability.
-              Returns False if e equals 0, regardless of the sigmoid function.
-    """
-
-    def _sigmoid(_e, _k, _e_0):
-        return 1 / (1 + np.exp(-_k * (e - _e_0)))
-
-    if e == 0:
-        return False
-
-    # Calculate the probability using the sigmoid function
-    p_sync = _sigmoid(e, k, e_0)
-
-    # Return True if we synchronize, False otherwise (based on p_sync)
-    return p_sync > random.random()
-
-
 def fda_opt(hyperparams):
 
     fed_ds, test_ds = prepare_federated_datasets(
@@ -122,7 +86,7 @@ def fda_opt(hyperparams):
         round_epochs = 0
 
         #while var_approx <= hyperparams['theta'] and not random_synchronize(round_epochs):
-        while var_approx <= theta and round_epochs < MAX_ROUNDS:
+        while var_approx <= theta and round_epochs < hyperparams['max_epochs']:
 
             round_epochs += 1
 
@@ -174,7 +138,7 @@ def fda_opt(hyperparams):
 
         print(metrics)
 
-        theta = ((MAX_ROUNDS / 2) / round_epochs) * metrics['variance']
+        theta = ((hyperparams['max_epochs'] / 2) / round_epochs) * metrics['variance']
 
         gc.collect()
 
