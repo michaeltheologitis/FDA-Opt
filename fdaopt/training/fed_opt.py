@@ -115,4 +115,8 @@ def fed_opt(hyperparams):
 
         gc.collect()
 
+        # TODO: Change rigid logic
+        if metrics['accuracy'] >= 0.902 * 0.95:
+            break
+
     metrics_handler.save_metrics()
