@@ -145,7 +145,7 @@ def fda_opt(hyperparams):
         if hyperparams['ds_name'] == 'mrpc':
             if metrics['accuracy'] >= 0.902 * 0.95:
                 break
-        if hyperparams['ds_name'] == 'sst-2':
+        if hyperparams['ds_name'] == 'sst2':
             if metrics['accuracy'] >=  0.948 * 0.99:
                 break
 
