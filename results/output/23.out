@@ -1,0 +1,27 @@
+Using device: cuda:0
+{'checkpoint': 'roberta-base',
+ 'ds_path': 'glue',
+ 'ds_name': 'sst2',
+ 'num_labels': 2,
+ 'num_clients': 100,
+ 'clients_per_round': 10,
+ 'alpha': 1.0,
+ 'batch_size': 8,
+ 'local_epochs': 1,
+ 'max_epochs': 28,
+ 'total_rounds': 200,
+ 'fda': True,
+ 'theta': 0.0,
+ 'extras': '',
+ 'server_opt_name': 'SGD',
+ 'server_opt_momentum': 0.9,
+ 'server_opt_lr': 1.0,
+ 'client_opt_name': 'SGD',
+ 'client_opt_lr': 0.0001}
+
+{'round': 1, 'accuracy': 0.4908256880733945, 'testing_loss': 0.705612155822439, 'training_loss': 0.6131550418382341, 'variance': 0.0010036120656877756, 'avg_norm_sq_drifts': 0.0010158477816730738, 'norm_sq_avg_drift': 1.2235770554980263e-05, 'round_steps': 88}
+{'round': 2, 'accuracy': 0.5091743119266054, 'testing_loss': 0.716684352640712, 'training_loss': 0.41660439836850865, 'variance': 0.014142757281661034, 'avg_norm_sq_drifts': 0.01857539638876915, 'norm_sq_avg_drift': 0.0044326395727694035, 'round_steps': 704}
+{'round': 3, 'accuracy': 0.5091743119266054, 'testing_loss': 0.7863274052602436, 'training_loss': 0.46274093744997363, 'variance': 0.008325859904289246, 'avg_norm_sq_drifts': 0.01157891470938921, 'norm_sq_avg_drift': 0.0032530545722693205, 'round_steps': 2464}
+{'round': 4, 'accuracy': 0.6651376146788991, 'testing_loss': 0.6257034102711109, 'training_loss': 0.45342800872961303, 'variance': 0.004244185984134674, 'avg_norm_sq_drifts': 0.0065491641871631145, 'norm_sq_avg_drift': 0.0023049782030284405, 'round_steps': 704}
+{'round': 5, 'accuracy': 0.8486238532110092, 'testing_loss': 0.4339679936203388, 'training_loss': 0.2300495153782865, 'variance': 0.007449738215655088, 'avg_norm_sq_drifts': 0.010836748406291008, 'norm_sq_avg_drift': 0.0033870101906359196, 'round_steps': 616}
+{'round': 6, 'accuracy': 0.7878440366972477, 'testing_loss': 0.9055212463867431, 'training_loss': 0.1381388199002091, 'variance': 0.015397301875054836, 'avg_norm_sq_drifts': 0.028996432200074196, 'norm_sq_avg_drift': 0.01359913032501936, 'round_steps': 1760}

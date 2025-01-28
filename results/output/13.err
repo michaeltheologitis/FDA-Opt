@@ -1,0 +1,3 @@
+Map:   0%|          | 0/624 [00:00<?, ? examples/s]Map: 100%|██████████| 624/624 [00:00<00:00, 21905.85 examples/s]
+Some weights of RobertaForSequenceClassification were not initialized from the model checkpoint at roberta-base and are newly initialized: ['classifier.dense.bias', 'classifier.dense.weight', 'classifier.out_proj.bias', 'classifier.out_proj.weight']
+You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
