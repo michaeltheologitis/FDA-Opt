@@ -140,15 +140,6 @@ def fda_opt(hyperparams):
 
         theta = ((hyperparams['max_epochs'] / 2) / round_epochs) * metrics['variance']
 
-
-        # TODO: Change rigid logic
-        if hyperparams['ds_name'] == 'mrpc':
-            if metrics['accuracy'] >= 0.902 * 0.95:
-                break
-        if hyperparams['ds_name'] == 'sst2':
-            if metrics['accuracy'] >=  0.948 * 0.99:
-                break
-
         gc.collect()
 
     metrics_handler.save_metrics()
