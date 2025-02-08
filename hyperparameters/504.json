@@ -1,0 +1,1 @@
+{"checkpoint": "roberta-base", "ds_path": "glue", "ds_name": "qnli", "num_labels": 2, "num_clients": 250, "clients_per_round": 10, "alpha": 1.0, "batch_size": 8, "local_epochs": 1, "max_epochs": -1, "total_rounds": 200, "fda": false, "theta": 0.0, "extras": "", "server_opt_name": "Adagrad", "server_opt_lr": 0.001, "client_opt_name": "SGD", "client_opt_lr": 0.1}
