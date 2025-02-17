@@ -142,4 +142,7 @@ def fda_opt(hyperparams):
 
         gc.collect()
 
+        if hyperparams['threshold']:
+            if stop_training_with_threshold(hyperparams, metrics): break
+
     metrics_handler.save_metrics()
