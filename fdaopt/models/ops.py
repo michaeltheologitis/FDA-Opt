@@ -374,3 +374,30 @@ def get_updated_client_parameters(client_train_params_dict, sampled_clients, par
         new_client_train_params_dict[new_client_id] = old_params
 
     return new_client_train_params_dict
+
+
+def stop_training_with_threshold(hyperparams, metrics):
+
+    if hyperparams['checkpoint'] == 'roberta-base':
+
+        if hyperparams['ds_name'] == 'mrpc':
+            if metrics['accuracy'] >= 0.902 * 0.95:
+                return True
+
+        if hyperparams['ds_name'] == 'rte':
+            if metrics['accuracy'] >= 0.789 * 0.95:
+                return True
+
+        if hyperparams['ds_name'] == 'cola':
+            if metrics['matthews_correlation'] >= 0.636 * 0.95:
+                return True
+
+        if hyperparams['ds_name'] == 'sst2':
+            if metrics['accuracy'] >= 0.948 * 0.99:
+                return True
+
+        if hyperparams['ds_name'] == 'qnli':
+            if metrics['accuracy'] >= 0.928 * 0.95:
+                return True
+
+    return False
