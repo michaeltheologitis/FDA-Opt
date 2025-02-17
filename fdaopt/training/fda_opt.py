@@ -3,7 +3,7 @@ import gc
 from fdaopt.datasets.fed_data_prep import prepare_federated_datasets, ClientSampler
 from fdaopt.metrics.mentrics_handler import MetricsHandler
 from fdaopt.models.ops import (compute_client_drifts, compute_pseudo_gradients, set_gradients, copy_parameters,
-    get_updated_client_parameters, variance, compute_metrics, fda_variance_approx)
+    get_updated_client_parameters, variance, compute_metrics, fda_variance_approx, stop_training_with_threshold)
 from fdaopt.training.fed_train import client_round_train
 from fdaopt.training.sketch import AmsSketch
 from fdaopt.training.optimizers import server_client_optimizers

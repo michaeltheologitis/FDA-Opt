@@ -83,6 +83,7 @@ if __name__ == '__main__':
     parser.add_argument('--max_epochs', type=int, help="FDA-Opt: The number of local epochs until we forcibly synchronize the model.", default=10)
     parser.add_argument('--total_rounds', type=int, help="The total number of rounds for the training.", default=1000)
     parser.add_argument('--fda', action='store_true', help="If given, then we train with FDA.")
+    parser.add_argument('--threshold', action='store_true', help="If given, then we stop training when the metric threshold is reached. See `stop_training_with_threshold` in models/ops.")
     parser.add_argument('--theta', type=float, help="The theta parameter for the FDA.", default=0.0)
     parser.add_argument('--server_opt_name', type=str, help="The name of the server optimizer.", required=True)
     parser.add_argument('--client_opt_name', type=str, help="The name of the client optimizer.", required=True)
