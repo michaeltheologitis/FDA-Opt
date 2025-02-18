@@ -46,6 +46,7 @@ def create_hyperparameters(args):
         'max_epochs': args.max_epochs,
         'total_rounds': args.total_rounds,
         'fda': args.fda,
+        'threshold': args.threshold,
         'theta': args.theta,
         'extras': args.extras
     }
