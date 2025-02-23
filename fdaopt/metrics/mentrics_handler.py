@@ -23,7 +23,7 @@ class MetricsHandler:
         self.hyperparams = hyperparams
 
         # Generate a unique filename based on hyperparameters
-        self.filename = "_".join([f"{str(v)}" for k, v in self.hyperparams.items()]) + '.csv'
+        self.filename = "_".join([f"{str(v).replace('/', '-')}" for k, v in self.hyperparams.items()]) + '.csv'
 
         # Initialize an empty list to store round metrics
         self.round_metrics = []
