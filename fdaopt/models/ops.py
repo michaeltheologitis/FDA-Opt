@@ -82,7 +82,7 @@ def average_client_parameters2(client_train_params_dict):
 
 
 @torch.no_grad
-def compute_metrics(model, ds_path, ds_name, test_ds):
+def compute_metrics(model, ds_path, ds_name, test_ds_dict):
     """
     Computes evaluation metrics for the given model on the test dataset.
 
@@ -95,48 +95,62 @@ def compute_metrics(model, ds_path, ds_name, test_ds):
         model (torch.nn.Module): The model to be evaluated.
         ds_path (str): The path or identifier of the dataset. This is used to load the appropriate evaluation metric.
         ds_name (str): The name of the specific dataset configuration. This helps in loading the correct evaluation metric.
-        test_ds (DataLoader): A DataLoader for the test dataset.
+        test_ds_dict (Dict): A dictionary with key the name of the test_ds and value the DataLoader for this test dataset.
 
     Returns:
         dict: A dictionary containing the computed evaluation metrics.
     """
 
-    # Load the evaluation metric
-    metric = evaluate.load(path=ds_path, config_name=ds_name)
+    def _compute_metrics(_model, _ds_path, _config_name, _test_ds):
 
-    testing_loss = 0.0
-    num_batches = len(test_ds)
+        # Load the evaluation metric
+        metric = evaluate.load(path=_ds_path, config_name=_config_name)
 
-    # Set the model to evaluation mode
-    model.eval()
+        testing_loss = 0.0
+        num_batches = len(_test_ds)
 
-    for batch in test_ds:
-        batch = {k: v.to(DEVICE) for k, v in batch.items()}
+        # Set the model to evaluation mode
+        _model.eval()
 
-        # Perform a forward pass
-        outputs = model(**batch)
-        loss = outputs.loss
+        for batch in _test_ds:
+            batch = {k: v.to(DEVICE) for k, v in batch.items()}
 
-        # Get logits and predictions
-        logits = outputs.logits
-        predictions = torch.argmax(logits, dim=-1)
+            # Perform a forward pass
+            outputs = _model(**batch)
+            loss = outputs.loss
 
-        # Add batch predictions and references to the metric
-        metric.add_batch(predictions=predictions, references=batch["labels"])
+            # Get logits and predictions
+            logits = outputs.logits
+            predictions = torch.argmax(logits, dim=-1)
 
-        testing_loss += loss.item()
+            # Add batch predictions and references to the metric
+            metric.add_batch(predictions=predictions, references=batch["labels"])
 
-    # Calculate the average test loss
-    average_test_loss = testing_loss / num_batches
+            testing_loss += loss.item()
 
-    # Compute the final evaluation metrics
-    metrics = metric.compute()
+        # Calculate the average test loss
+        average_test_loss = testing_loss / num_batches
 
-    # Add the average test loss to the evaluation metrics
-    metrics['testing_loss'] = average_test_loss
+        # Compute the final evaluation metrics
+        metrics = metric.compute()
 
-    # Compute and return the final evaluation metrics
-    return metrics
+        # Add the average test loss to the evaluation metrics
+        metrics['testing_loss'] = average_test_loss
+
+        # Compute and return the final evaluation metrics
+        return metrics
+
+    if ds_path == 'glue':
+        if ds_name == 'mnli':
+            metrics_m = _compute_metrics(model, ds_path, 'mnli_matched', test_ds_dict['mnli_matched'])
+            metrics_m = {k + "_m": v for k, v in metrics_m.items()}  # Rename keys
+
+            metrics_mm = _compute_metrics(model, ds_path, 'mnli_mismatched', test_ds_dict['mnli_mismatched'])
+            metrics_mm = {k + "_mm": v for k, v in metrics_mm.items()}  # Rename keys
+
+            return {**metrics_m, **metrics_mm}
+        else:
+            return _compute_metrics(model, ds_path, ds_name, test_ds_dict[ds_name])
 
 
 @torch.no_grad

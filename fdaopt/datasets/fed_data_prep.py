@@ -265,11 +265,13 @@ def tokenize_function(ds_path, ds_name, tokenizer):
         return lambda example: tokenizer(example["sentence"], truncation=True)
     if ds_path == "glue" and ds_name == "qnli":
         return lambda example: tokenizer(example["question"], example["sentence"], truncation=True)
+    if ds_path == "glue" and ds_name == "mnli":
+        return lambda example: tokenizer(example["premise"], example["hypothesis"], truncation=True)
 
     return None
 
 
-def test_dataset_split(raw_datasets, ds_path):
+def test_dataset_split(raw_datasets, ds_path, ds_name):
     """
     Split the raw dataset into the appropriate test set.
 
@@ -281,11 +283,15 @@ def test_dataset_split(raw_datasets, ds_path):
         ds_path (str): The path or identifier of the dataset.
 
     Returns:
-        datasets.Dataset: The extracted test dataset split.
+        Dictionary with key the name of the test ds and value a datasets.Dataset from the extracted test dataset split.
     """
 
     if ds_path == 'glue':
-        return raw_datasets['validation']
+        if ds_name == 'mnli':
+            return {'mnli_matched': raw_datasets['validation_matched'],
+                    'mnli_mismatched': raw_datasets['validation_mismatched']}
+        else:
+            return {ds_name: raw_datasets['validation']}
 
 
 def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha, batch_size):
@@ -307,14 +313,14 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
     Returns:
         tuple: A tuple containing:
             - FederatedDataset: An object containing client DataLoaders for federated learning.
-            - DataLoader: A DataLoader for the tokenized and preprocessed test dataset.
+            - Dictionary: Key the test ds name and value a DataLoader for the tokenized and preprocessed test dataset.
     """
 
     # Load the raw dataset
     raw_datasets = load_dataset(path=ds_path, name=ds_name)
 
     # 1. Test dataset
-    raw_test_dataset = test_dataset_split(raw_datasets, ds_path)
+    raw_test_datasets = test_dataset_split(raw_datasets, ds_path, ds_name)
     # 2. Training dataset
     raw_train_dataset = raw_datasets['train']
 
@@ -325,7 +331,10 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
     client_datasets = federated_dirichlet_datasets(raw_train_dataset, prior_distribution, num_clients, alpha)
 
     # Load the tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+    if checkpoint == 'microsoft/deberta-v3-base':
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint, use_fast=False)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(checkpoint)
 
     # Create the tokenization function
     tokenize_fn = tokenize_function(ds_path, ds_name, tokenizer)
@@ -339,8 +348,11 @@ def prepare_federated_datasets(ds_path, ds_name, checkpoint, num_clients, alpha,
 
     fed_ds = FederatedDataset(client_dataloaders)
 
-    # Preprocess the test dataset
-    test_ds = preprocess_test_dataset(raw_test_dataset, tokenize_fn, data_collator, batch_size)
+    # Preprocess the test datasets
+    test_ds = {
+        k: preprocess_test_dataset(v, tokenize_fn, data_collator, batch_size)
+        for k, v in raw_test_datasets.items()
+    }
 
     return fed_ds, test_ds
 
@@ -462,3 +474,4 @@ class ClientSampler:
             # Yield each group of sampled client IDs
             for sampled_client_ids in groups:
                 yield sampled_client_ids
+
