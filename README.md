@@ -13,16 +13,6 @@ pip install torch torchvision torchaudio datasets transformers pandas evaluate s
 
 ## Paper Experiments
 
-=======
-
-## Enviroment
-Requires python version 3.12.
-```bash
-pip install torch torchvision torchaudio datasets transformers pandas evaluate scikit-learn scipy matplotlib
-```
-
-## Paper Experiments
-
 ### Create the 510 unique experiments
 ```bash
 bash paper-experiments.sh
