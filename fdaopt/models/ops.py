@@ -414,4 +414,9 @@ def stop_training_with_threshold(hyperparams, metrics):
             if metrics['accuracy'] >= 0.928 * 0.95:
                 return True
 
+    if hyperparams['checkpoint'] == 'microsoft/deberta-v3-base':
+        if hyperparams['ds_name'] == 'mnli':
+            if metrics['accuracy_m'] >= 0.906 * 0.99 and metrics['accuracy_mm'] >= 0.907 * 0.99:
+                return True
+
     return False
