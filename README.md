@@ -40,7 +40,7 @@ We first create the experiment for **FedAdam** (Adam at the server and SGD at th
 python -m fdaopt.miscellaneous.create_hyperparameters --total_rounds 100 --ds_name mrpc --num_clients 10 --clients_per_round 10 --server_opt_name Adam --client_opt_name SGD --server_opt_args lr=0.001 --client_opt_args lr=1e-05
 ```
 
-We then create the experiment for **FDA-Adam** with the simple addition of the ``--fda`` flag.
+We then create the experiment for **FDA-Adam** with the simple addition of the ``--fda`` flag..
 
 ```bash
 python -m fdaopt.miscellaneous.create_hyperparameters --total_rounds 100 --ds_name mrpc --num_clients 10 --clients_per_round 10 --server_opt_name Adam --client_opt_name SGD --server_opt_args lr=0.001 --client_opt_args lr=1e-05 --fda
